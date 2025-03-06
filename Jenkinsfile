@@ -203,6 +203,7 @@ node {
       // tici tests
       'onroad tests': {
         deviceStage("onroad", "tici-needs-can", ["UNSAFE=1"], [
+          step("build nightly", "RELEASE_BRANCH=justtesting $SOURCE_DIR/release/build_release.sh"),
           step("build openpilot", "cd system/manager && ./build.py"),
           step("check dirty", "release/check-dirty.sh"),
           step("onroad tests", "pytest selfdrive/test/test_onroad.py -s", [timeout: 60]),

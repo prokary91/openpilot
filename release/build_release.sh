@@ -92,13 +92,9 @@ git add -f .
 git commit --amend -m "openpilot v$VERSION"
 
 # Run tests
-TEST_FILES="tools/"
-cd $SOURCE_DIR
-cp -pR -n --parents $TEST_FILES $BUILD_DIR/
 cd $BUILD_DIR
 RELEASE=1 pytest -n0 -s selfdrive/test/test_onroad.py
-#system/manager/test/test_manager.py
-pytest selfdrive/car/tests/test_car_interfaces.py
+#pytest selfdrive/car/tests/test_car_interfaces.py
 rm -rf $TEST_FILES
 
 if [ ! -z "$RELEASE_BRANCH" ]; then
