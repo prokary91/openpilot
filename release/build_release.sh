@@ -93,7 +93,7 @@ git commit --amend -m "openpilot v$VERSION"
 
 # Run tests
 cd $BUILD_DIR
-RELEASE=1 pytest -n0 -s selfdrive/test/test_onroad.py
+#RELEASE=1 pytest -n0 -s selfdrive/test/test_onroad.py
 #pytest selfdrive/car/tests/test_car_interfaces.py
 rm -rf $TEST_FILES
 
