@@ -95,7 +95,6 @@ git commit --amend -m "openpilot v$VERSION"
 cd $BUILD_DIR
 #RELEASE=1 pytest -n0 -s selfdrive/test/test_onroad.py
 #pytest selfdrive/car/tests/test_car_interfaces.py
-rm -rf $TEST_FILES
 
 if [ ! -z "$RELEASE_BRANCH" ]; then
   echo "[-] pushing release T=$SECONDS"
