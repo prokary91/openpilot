@@ -8,6 +8,7 @@ from openpilot.common.conversions import Conversions as CV
 from openpilot.common.params import Params
 from openpilot.common.realtime import config_realtime_process, Priority, Ratekeeper
 from openpilot.common.swaglog import cloudlog
+from openpilot.common.filter_simple import FirstOrderFilter
 
 from opendbc.car.car_helpers import interfaces
 from opendbc.car.vehicle_model import VehicleModel
@@ -42,6 +43,7 @@ class Controls:
 
     self.steer_limited_by_controls = False
     self.desired_curvature = 0.0
+    self.desired_curvature_filter = FirstOrderFilter(0, 0.1, 0.01)
 
     self.pose_calibrator = PoseCalibrator()
     self.calibrated_pose: Pose | None = None
@@ -109,7 +111,8 @@ class Controls:
     actuators.accel = float(self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits))
 
     # Steering PID loop and lateral MPC
-    self.desired_curvature, curvature_limited = clip_curvature(CS.vEgo, self.desired_curvature, model_v2.action.desiredCurvature, lp.roll)
+    self.desired_curvature_filter.update(model_v2.action.desiredCurvature)
+    self.desired_curvature, curvature_limited = clip_curvature(CS.vEgo, self.desired_curvature, self.desired_curvature_filter.x, lp.roll)
     actuators.curvature = self.desired_curvature
     steer, steeringAngleDeg, lac_log = self.LaC.update(CC.latActive, CS, self.VM, lp,
                                                        self.steer_limited_by_controls, self.desired_curvature,
