@@ -89,7 +89,7 @@ class Track:
       "vLead": float(self.vLead),
       "vLeadK": float(self.vLeadK),
       "aLeadK": float(self.aLeadK),
-      "aLeadTau": float(self.aLeadTau.x),
+      "aLeadTau": 0.0,  # float(self.aLeadTau.x),
       "status": True,
       "fcw": self.is_potential_fcw(model_prob),
       "modelProb": model_prob,
