@@ -20,7 +20,7 @@ from openpilot.common.filter_simple import FirstOrderFilter
 # move it at all, this is compensated for too.
 
 LOW_SPEED_X = [3, 5]
-LOW_SPEED_Y = [15, 0]
+LOW_SPEED_Y = [18, 0]
 
 
 class LatControlTorque(LatControl):
