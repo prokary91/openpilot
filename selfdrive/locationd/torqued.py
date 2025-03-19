@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 from collections import deque, defaultdict
+import json
 
 import cereal.messaging as messaging
 from cereal import car, log
@@ -42,15 +43,15 @@ def slope2rot(slope):
 
 
 class TorqueBuckets(PointBuckets):
-  def add_point(self, x, y):
+  def add_point(self, x, y, z):
     for bound_min, bound_max in self.x_bounds:
       if (x >= bound_min) and (x < bound_max):
-        self.buckets[(bound_min, bound_max)].append([x, 1.0, y])
+        self.buckets[(bound_min, bound_max)].append([x, z, y])
         break
 
 
 class TorqueEstimator(ParameterEstimator):
-  def __init__(self, CP, decimated=False, track_all_points=False):
+  def __init__(self, CP, decimated=True, track_all_points=False):
     self.hist_len = int(HISTORY / DT_MDL)
     self.lag = CP.steerActuatorDelay + .2  # from controlsd
     self.track_all_points = track_all_points  # for offline analysis, without max lateral accel or max steer torque filters
@@ -194,11 +195,11 @@ class TorqueEstimator(ParameterEstimator):
         steer = np.interp(t, self.raw_points['carOutput_t'], self.raw_points['steer_torque']).item()
         lateral_acc = (vego * yaw_rate) - (np.sin(roll) * ACCELERATION_DUE_TO_GRAVITY).item()
         if all(lat_active) and not any(steer_override) and (vego > MIN_VEL) and (abs(steer) > STEER_MIN_THRESHOLD):
-          if abs(lateral_acc) <= LAT_ACC_THRESHOLD:
-            self.filtered_points.add_point(steer, lateral_acc)
+          # if abs(lateral_acc) <= LAT_ACC_THRESHOLD:
+          self.filtered_points.add_point(steer, lateral_acc, vego)
 
           if self.track_all_points:
-            self.all_torque_points.append([steer, lateral_acc])
+            self.all_torque_points.append([steer, lateral_acc, vego])
 
   def get_msg(self, valid=True, with_points=False):
     msg = messaging.new_message('liveTorqueParameters')
@@ -226,7 +227,7 @@ class TorqueEstimator(ParameterEstimator):
           self.update_params({'latAccelFactor': latAccelFactor, 'latAccelOffset': latAccelOffset, 'frictionCoefficient': frictionCoeff})
 
     if with_points:
-      liveTorqueParameters.points = self.filtered_points.get_points()[:, [0, 2]].tolist()
+      liveTorqueParameters.points = self.filtered_points.get_points()[:, [0, 1, 2]].tolist()
 
     liveTorqueParameters.latAccelFactorFiltered = float(self.filtered_params['latAccelFactor'].x)
     liveTorqueParameters.latAccelOffsetFiltered = float(self.filtered_params['latAccelOffset'].x)
@@ -261,6 +262,9 @@ def main(demo=False):
     # Cache points every 60 seconds while onroad
     if sm.frame % 240 == 0:
       msg = estimator.get_msg(valid=sm.all_checks(), with_points=True)
+      print(msg.liveTorqueParameters.latAccelFactorRaw, msg.liveTorqueParameters.latAccelFactorFiltered)
+      with open('/home/batman/torque_points_rivian.txt', 'w') as f:
+        f.write(json.dumps(msg.liveTorqueParameters.to_dict()))
       params.put_nonblocking("LiveTorqueParameters", msg.to_bytes())
 
 
