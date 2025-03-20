@@ -75,16 +75,18 @@ if __name__ == '__main__':
   parser = argparse.ArgumentParser(description="Find max lateral acceleration events",
                                    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-  parser.add_argument("route")
+  parser.add_argument("route", nargs='+')
   args = parser.parse_args()
 
-  lr = LogReader(args.route, sort_by_time=True)
-  qlog = args.route.endswith('/q')
-  if qlog:
-    print('WARNING: Treating route as qlog!')
+  events = []
+  for route in args.route:
+    lr = LogReader(route, sort_by_time=True)
+    qlog = route.endswith('/q')
+    if qlog:
+      print('WARNING: Treating route as qlog!')
 
-  print('Finding events...')
-  events = find_events(lr, qlog=qlog)
+    print('Finding events...')
+    events += find_events(lr, qlog=qlog)
 
   print()
   print(f'Found {len(events)} events')
@@ -97,7 +99,7 @@ if __name__ == '__main__':
   plt.ion()
   plt.clf()
   plt.suptitle(f'{CP.carFingerprint} - Max lateral acceleration events')
-  plt.title(args.route)
+  plt.title(', '.join(args.route))
   plt.scatter([ev.speed for ev in events], [ev.lateral_accel for ev in events], label='max lateral accel events')
 
   plt.plot([0, 35], [3, 3], c='r', label='ISO 11270 - 3 m/s^2')

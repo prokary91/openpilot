@@ -2,6 +2,7 @@
 import numpy as np
 from collections import deque, defaultdict
 import json
+import os
 
 import cereal.messaging as messaging
 from cereal import car, log
@@ -18,7 +19,7 @@ MIN_POINTS_TOTAL = 4000
 MIN_POINTS_TOTAL_QLOG = 600
 FIT_POINTS_TOTAL = 2000
 FIT_POINTS_TOTAL_QLOG = 600
-MIN_VEL = 15  # m/s
+MIN_VEL = 5  # m/s
 FRICTION_FACTOR = 1.5  # ~85% of data coverage
 FACTOR_SANITY = 0.3
 FACTOR_SANITY_QLOG = 0.5
@@ -247,6 +248,12 @@ def main(demo=False):
   params = Params()
   estimator = TorqueEstimator(messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams))
 
+  d = '/home/batman/rivian_torque_points'
+  idx = 0
+  for f in os.listdir(d):
+    if f.endswith('.json'):
+      idx = max(idx, int(f.split('.')[1]) + 1)
+
   while True:
     sm.update()
     if sm.all_checks():
@@ -263,7 +270,7 @@ def main(demo=False):
     if sm.frame % 240 == 0:
       msg = estimator.get_msg(valid=sm.all_checks(), with_points=True)
       print(msg.liveTorqueParameters.latAccelFactorRaw, msg.liveTorqueParameters.latAccelFactorFiltered)
-      with open('/home/batman/torque_points_rivian.txt', 'w') as f:
+      with open(os.path.join(d, f'torque_points.{idx}.json'), 'w') as f:
         f.write(json.dumps(msg.liveTorqueParameters.to_dict()))
       params.put_nonblocking("LiveTorqueParameters", msg.to_bytes())
 
