@@ -14,7 +14,7 @@ class LatControl(ABC):
     self.sat_check_min_speed = 10.
 
     # we define the steer torque scale as [-1.0...1.0]
-    self.steer_max = 1.0
+    self.steer_max = 1.0  # TODO: self.CI.get_steer_max(v_ego)...
 
   @abstractmethod
   def update(self, active, CS, VM, params, steer_limited_by_controls, desired_curvature, calibrated_pose, curvature_limited):
