@@ -52,7 +52,7 @@ def find_events(lr: LogReader, qlog: bool = False) -> list[Event]:
     elif msg.which() == 'carOutput':
       # if we test with driver torque safety, max torque can be slightly noisy
       CO = msg.carOutput
-      requesting_max = requesting_max + 1 if abs(CO.actuatorsOutput.torque) > 0.6 else 0
+      requesting_max = requesting_max + 1 if abs(CO.actuatorsOutput.torque) > 0.99 else 0
 
     elif msg.which() == 'carState':
       steering_unpressed = steering_unpressed + 1 if not msg.carState.steeringPressed else 0
@@ -69,6 +69,7 @@ def find_events(lr: LogReader, qlog: bool = False) -> list[Event]:
       requesting_max = 0
 
       factor = 1 / abs(CO.actuatorsOutput.torque)
+      factor *= np.interp(v_ego, [9, 17], [1.4, 1])
 
       # TODO: would we extrapolate on curvature or post roll compensated lateral accel?
       current_lateral_accel = (curvature * v_ego ** 2 - roll * EARTH_G) * factor
