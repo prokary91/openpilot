@@ -2,6 +2,7 @@
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 from typing import NamedTuple
 from openpilot.tools.lib.logreader import LogReader
 from openpilot.selfdrive.locationd.models.pose_kf import EARTH_G
@@ -86,7 +87,7 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
   events = []
-  for route in args.route:
+  for route in tqdm(args.route):
     try:
       lr = LogReader(route, sort_by_time=True)
     except:
