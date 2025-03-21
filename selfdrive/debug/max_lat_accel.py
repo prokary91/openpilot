@@ -39,6 +39,8 @@ def find_events(lr: LogReader, qlog: bool = False) -> list[Event]:
   v_ego = 0
   roll = 0
 
+  CO = None
+
   for msg in lr:
     if msg.which() == 'carControl':
       if start_ts == 0:
@@ -48,7 +50,8 @@ def find_events(lr: LogReader, qlog: bool = False) -> list[Event]:
 
     elif msg.which() == 'carOutput':
       # if we test with driver torque safety, max torque can be slightly noisy
-      requesting_max = requesting_max + 1 if abs(msg.carOutput.actuatorsOutput.torque) > 0.95 else 0
+      CO = msg.carOutput
+      requesting_max = requesting_max + 1 if abs(CO.actuatorsOutput.torque) > 0.6 else 0
 
     elif msg.which() == 'carState':
       steering_unpressed = steering_unpressed + 1 if not msg.carState.steeringPressed else 0
@@ -64,7 +67,10 @@ def find_events(lr: LogReader, qlog: bool = False) -> list[Event]:
       # TODO: record max lat accel at the end of the event, need to use the past lat accel as overriding can happen before we detect it
       requesting_max = 0
 
-      current_lateral_accel = curvature * v_ego ** 2 - roll * EARTH_G
+      factor = 1 / abs(CO.actuatorsOutput.torque)
+
+      current_lateral_accel = (curvature * v_ego ** 2 - roll * EARTH_G) * factor
+
       events.append(Event(current_lateral_accel, v_ego, roll, round((msg.logMonoTime - start_ts) * 1e-9, 2)))
       print(events[-1])
 
@@ -80,7 +86,12 @@ if __name__ == '__main__':
 
   events = []
   for route in args.route:
-    lr = LogReader(route, sort_by_time=True)
+    try:
+      lr = LogReader(route, sort_by_time=True)
+    except:
+      print(f'Skipping {route}')
+      continue
+
     qlog = route.endswith('/q')
     if qlog:
       print('WARNING: Treating route as qlog!')
