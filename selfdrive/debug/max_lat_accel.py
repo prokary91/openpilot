@@ -69,6 +69,7 @@ def find_events(lr: LogReader, qlog: bool = False) -> list[Event]:
 
       factor = 1 / abs(CO.actuatorsOutput.torque)
 
+      # TODO: would we extrapolate on curvature or post roll compensated lateral accel?
       current_lateral_accel = (curvature * v_ego ** 2 - roll * EARTH_G) * factor
 
       events.append(Event(current_lateral_accel, v_ego, roll, round((msg.logMonoTime - start_ts) * 1e-9, 2)))
