@@ -29,8 +29,8 @@ STEER_MIN_THRESHOLD = 0.02
 MIN_FILTER_DECAY = 50
 MAX_FILTER_DECAY = 250
 LAT_ACC_THRESHOLD = 1
-STEER_BUCKET_BOUNDS = [(-0.5, -0.3), (-0.3, -0.2), (-0.2, -0.1), (-0.1, 0), (0, 0.1), (0.1, 0.2), (0.2, 0.3), (0.3, 0.5)]
-MIN_BUCKET_POINTS = np.array([100, 300, 500, 500, 500, 500, 300, 100])
+STEER_BUCKET_BOUNDS = [(-1.0, -0.5), (-0.5, -0.3), (-0.3, -0.2), (-0.2, -0.1), (-0.1, 0), (0, 0.1), (0.1, 0.2), (0.2, 0.3), (0.3, 0.5), (0.5, 1.0)]
+MIN_BUCKET_POINTS = np.array([50, 100, 300, 500, 500, 500, 500, 300, 100, 50])
 MIN_ENGAGE_BUFFER = 2  # secs
 
 VERSION = 1  # bump this to invalidate old parameter caches
@@ -270,6 +270,7 @@ def main(demo=False):
     if sm.frame % 240 == 0:
       msg = estimator.get_msg(valid=sm.all_checks(), with_points=True)
       print(msg.liveTorqueParameters.latAccelFactorRaw, msg.liveTorqueParameters.latAccelFactorFiltered)
+      print(msg.liveTorqueParameters.latAccelOffsetRaw, msg.liveTorqueParameters.latAccelOffsetFiltered)
       with open(os.path.join(d, f'torque_points.{idx}.json'), 'w') as f:
         f.write(json.dumps(msg.liveTorqueParameters.to_dict()))
       params.put_nonblocking("LiveTorqueParameters", msg.to_bytes())
