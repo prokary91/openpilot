@@ -13,6 +13,7 @@ import warnings
 import zstandard as zstd
 
 from collections.abc import Callable, Iterable, Iterator
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from urllib.parse import parse_qs, urlparse
 
 from cereal import log as capnp_log
@@ -119,14 +120,7 @@ def default_valid_file(fn: LogPath) -> bool:
 
 def auto_strategy(rlog_paths: list[LogPath], qlog_paths: list[LogPath], interactive: bool, valid_file: ValidFileCallable) -> list[LogPath]:
   # auto select logs based on availability
-  missing_rlogs = sum(rlog is None or not valid_file(rlog) for rlog in rlog_paths)
-  # If all rlogs are missing, check qlogs
-  if missing_rlogs == len(rlog_paths):
-    missing_qlogs = sum(qlog is None or not valid_file(qlog) for qlog in qlog_paths)
-    if missing_qlogs == len(qlog_paths):
-      # Neither rlogs nor qlogs are available, return rlog_paths as-is
-      return rlog_paths
-
+  missing_rlogs = [rlog is None or not valid_file(rlog) for rlog in rlog_paths].count(True)
   if missing_rlogs != 0:
     if interactive:
       if input(f"{missing_rlogs}/{len(rlog_paths)} rlogs were not found, would you like to fallback to qlogs for those segments? (y/n) ").lower() != "y":
@@ -208,9 +202,15 @@ def direct_source(file_or_url: str) -> list[LogPath]:
 
 
 def get_invalid_files(files):
-  for f in files:
-    if f is None or not file_exists(f):
-      yield f
+  if not files:
+    return
+
+  with ThreadPoolExecutor(max_workers=32) as executor:
+    future_to_file = {executor.submit(file_exists, file): file for file in files}
+    for future in as_completed(future_to_file):
+      file = future_to_file[future]
+      if not future.result():
+        yield file
 
 
 def check_source(source: Source, *args) -> list[LogPath]:
@@ -307,11 +307,11 @@ class LogReader:
   def _run_on_segment(self, func, i):
     return func(self._get_lr(i))
 
-  def run_across_segments(self, num_processes, func, desc=None):
+  def run_across_segments(self, num_processes, func, disable_tqdm=False, desc=None):
     with multiprocessing.Pool(num_processes) as pool:
       ret = []
       num_segs = len(self.logreader_identifiers)
-      for p in tqdm.tqdm(pool.imap(partial(self._run_on_segment, func), range(num_segs)), total=num_segs, desc=desc):
+      for p in tqdm.tqdm(pool.imap(partial(self._run_on_segment, func), range(num_segs)), total=num_segs, disable=disable_tqdm, desc=desc):
         ret.extend(p)
       return ret
 
