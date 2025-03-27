@@ -2,6 +2,7 @@
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
 from tqdm import tqdm
 from typing import NamedTuple
@@ -77,6 +78,21 @@ def find_events(lr: LogReader, extrapolate: bool = False, qlog: bool = False) ->
   return events
 
 
+def process_route(route):
+  try:
+    lr = LogReader(route, sort_by_time=True)
+  except Exception:
+    print(f'Skipping {route}')
+    return [], None
+
+  qlog = route.endswith('/q')
+  if qlog:
+    print('WARNING: Treating route as qlog!')
+
+  print('Finding events...')
+  return lr.run_across_segments(8, partial(find_events, extrapolate=args.extrapolate, qlog=qlog), disable_tqdm=True), lr.first('carParams')
+
+
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description="Find max lateral acceleration events",
                                    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -87,27 +103,17 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
   events = []
-  for route in tqdm(args.route):
-    try:
-      lr = LogReader(route, sort_by_time=True)
-    except Exception:
-      print(f'Skipping {route}')
-      continue
-
-    qlog = route.endswith('/q')
-    if qlog:
-      print('WARNING: Treating route as qlog!')
-
-    print('Finding events...')
-    events += lr.run_across_segments(8, partial(find_events, extrapolate=args.extrapolate, qlog=qlog), disable_tqdm=True)
+  with ThreadPoolExecutor() as executor:
+    futures = [executor.submit(process_route, route) for route in args.route]
+    for future in tqdm(as_completed(futures), total=len(futures)):
+      e, CP = future.result()
+      events.extend(e)
 
   print()
   print(f'Found {len(events)} events')
 
   perc_left_accel = -np.percentile([-ev.lateral_accel for ev in events if ev.lateral_accel < 0] or [0], 90)
   perc_right_accel = np.percentile([ev.lateral_accel for ev in events if ev.lateral_accel > 0] or [0], 90)
-
-  CP = lr.first('carParams')
 
   plt.ion()
   plt.clf()
