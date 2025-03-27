@@ -206,7 +206,7 @@ class RadarD:
 
     if sm.recv_frame['carState'] != self.last_v_ego_frame:
       self.v_ego = sm['carState'].vEgo
-      self.a_ego = sm['carState'].vEgo
+      self.a_ego = sm['carState'].aEgo
       self.v_ego_hist.append(self.v_ego)
       self.last_v_ego_frame = sm.recv_frame['carState']
 
