@@ -7,6 +7,7 @@
 
 int main(int argc, char *argv[]) {
   initApp(argc, argv);
+  int value = std::stoi(argv[1]);
 
   QApplication a(argc, argv);
   QWidget w;
@@ -19,15 +20,23 @@ int main(int argc, char *argv[]) {
   {
     QHBoxLayout *hlayout = new QHBoxLayout();
     layout->addLayout(hlayout);
-    hlayout->addWidget(new CameraWidget("camerad", VISION_STREAM_ROAD));
+    if (value == 1) {
+      hlayout->addWidget(new CameraWidget("camerad", VISION_STREAM_DRIVER));
+    } else if (value == 2) {
+      hlayout->addWidget(new CameraWidget("camerad", VISION_STREAM_WIDE_ROAD));
+    } else {
+      hlayout->addWidget(new CameraWidget("camerad", VISION_STREAM_ROAD));
+    }
   }
 
+  /*
   {
     QHBoxLayout *hlayout = new QHBoxLayout();
     layout->addLayout(hlayout);
     hlayout->addWidget(new CameraWidget("camerad", VISION_STREAM_DRIVER));
     hlayout->addWidget(new CameraWidget("camerad", VISION_STREAM_WIDE_ROAD));
   }
+  */
 
   return a.exec();
 }
