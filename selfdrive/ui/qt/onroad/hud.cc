@@ -32,6 +32,7 @@ void HudRenderer::updateState(const UIState &s) {
     set_speed *= KM_TO_MILE;
   }
 
+
   // Handle older routes where vEgoCluster is not set
   v_ego_cluster_seen = v_ego_cluster_seen || car_state.getVEgoCluster() != 0.0;
   float v_ego = v_ego_cluster_seen ? car_state.getVEgoCluster() : car_state.getVEgo();
@@ -52,6 +53,20 @@ void HudRenderer::draw(QPainter &p, const QRect &surface_rect) {
     drawSetSpeed(p, surface_rect);
   }
   drawCurrentSpeed(p, surface_rect);
+
+  UIState *s = uiState();
+  const SubMaster &sm = *(s->sm);
+
+  // Draw set speed
+  const auto &gps = sm["gpsLocationExternal"].getGpsLocationExternal();
+  float horizontal_accuracy = gps.getHorizontalAccuracy();
+  bool has_gps_fix = gps.getHasFix();
+  QString gps_acc_str = has_gps_fix ? ("acc: " + QString::number(horizontal_accuracy, 'f', 2) + "m") : "acc: N/A";
+  QString sats_str = "sats: " + QString::number(gps.getSatelliteCount());
+  p.setFont(InterFont(90, QFont::Bold));
+  p.setPen(QColor(0xFF, 0xFF, 0xFF, 0xFF));
+  p.drawText(85, 350, gps_acc_str);
+  p.drawText(85, 450, sats_str);
 
   p.restore();
 }
