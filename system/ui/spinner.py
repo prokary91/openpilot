@@ -16,8 +16,8 @@ FONT_SIZE = 80
 DARKGRAY = (55, 55, 55, 255)
 
 
-def clamp(value, min_value, max_value):
-  return max(min(value, max_value), min_value)
+def interp(value, x1, x2, y1, y2):
+  return ((max(min(value, x2), x1) - x1) / (x2 - x1)) * (y2 - y1) + y1
 
 
 class Spinner:
@@ -56,11 +56,10 @@ class Spinner:
     if text:
       y_pos = rl.get_screen_height() - MARGIN - PROGRESS_BAR_HEIGHT
       if text.isdigit():
-        progress = clamp(int(text) / 100., 0, 1)
         bar = rl.Rectangle(center.x - PROGRESS_BAR_WIDTH / 2.0, y_pos, PROGRESS_BAR_WIDTH, PROGRESS_BAR_HEIGHT)
         rl.draw_rectangle_rounded(bar, 1, 10, DARKGRAY)
 
-        bar.width *= 0.05 + (progress * 0.95)
+        bar.width *= interp(int(text), 0, 100, 0.05, 1.0)
         rl.draw_rectangle_rounded(bar, 1, 10, rl.WHITE)
       else:
         text_size = rl.measure_text_ex(gui_app.font(), text, FONT_SIZE, 1.0)
