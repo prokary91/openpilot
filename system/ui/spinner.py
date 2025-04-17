@@ -56,11 +56,11 @@ class Spinner:
     if text:
       y_pos = rl.get_screen_height() - MARGIN - PROGRESS_BAR_HEIGHT
       if text.isdigit():
-        progress = clamp(int(text), 0, 100)
+        progress = clamp(int(text) / 100., 0, 1)
         bar = rl.Rectangle(center.x - PROGRESS_BAR_WIDTH / 2.0, y_pos, PROGRESS_BAR_WIDTH, PROGRESS_BAR_HEIGHT)
         rl.draw_rectangle_rounded(bar, 1, 10, DARKGRAY)
 
-        bar.width *= progress / 100.0
+        bar.width *= 0.05 + (progress * 0.95)
         rl.draw_rectangle_rounded(bar, 1, 10, rl.WHITE)
       else:
         text_size = rl.measure_text_ex(gui_app.font(), text, FONT_SIZE, 1.0)
